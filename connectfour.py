@@ -25,35 +25,47 @@ def place_piece(board, player, column):
             board[row][index] = player
             return
 
+def clone_and_place_piece(board, player, column):
+    new_board = board.copy()
+    place_piece(new_board, player, column)
+    return new_board
 
-def detect_win(board, key):
+
+def detect_win(board, player):
     MAX_SPACE_TO_WIN = 3 # Farthest space where a winning connection may start
     # Horizontal win
     for col in range(COLUMNS - MAX_SPACE_TO_WIN):
         for row in range(ROWS):
-            if board[row][col] == key and board[row][col+1] == key and \
-                    board[row][col+2] == key and board[row][col+3] == key:
+            if board[row][col] == player and board[row][col+1] == player and \
+                    board[row][col+2] == player and board[row][col+3] == player:
                 return True
     # Vertical win
     for col in range(COLUMNS):
         for row in range(ROWS - MAX_SPACE_TO_WIN):
-            if board[row][col] == key and board[row+1][col] == key and \
-                    board[row+2][col] == key and board[row+3][col] == key:
+            if board[row][col] == player and board[row+1][col] == player and \
+                    board[row+2][col] == player and board[row+3][col] == player:
                 return True
     # Diagonal upwards win
     for col in range(COLUMNS - MAX_SPACE_TO_WIN):
         for row in range(ROWS - MAX_SPACE_TO_WIN):
-            if board[row][col] == key and board[row+1][col+1] == key and \
-                    board[row+2][col+2] == key and board[row+3][col+3] == key:
+            if board[row][col] == player and board[row+1][col+1] == player and \
+                    board[row+2][col+2] == player and board[row+3][col+3] == player:
                 return True
     # Diagonal downwards win
     for col in range(COLUMNS - MAX_SPACE_TO_WIN):
         for row in range(MAX_SPACE_TO_WIN, ROWS):
-            if board[row][col] == key and board[row-1][col+1] == key and \
-                    board[row-2][col+2] == key and board[row-3][col+3] == key:
+            if board[row][col] == player and board[row-1][col+1] == player and \
+                    board[row-2][col+2] == player and board[row-3][col+3] == player:
                 return True
     return False
     
+
+def score(board, player):
+    score = 0
+    if detect_win(board, player):
+        score += 9999
+    return score
+
 
 def draw_game(board, turn, game_over=False, AI_move=0):
     highlight_index = AI_move - 1
@@ -142,14 +154,24 @@ while not is_game_won:
 
     elif turn == AI:
         # Placeholder AI move. It will change:
-        AI_move = random.randrange(1,8)
-        while not is_valid_column(board, AI_move):
+        best_move = -1
+        best_score = 0
+        for col in range(1,8):
+            current_score = score(clone_and_place_piece(board, AI, col), AI)
+            if current_score > best_score:
+                best_move = col
+                best_score = current_score
+        if best_move in range(1,8):
+            AI_move = best_move
+        else:
             AI_move = random.randrange(1,8)
-        time.sleep(2)
+            while not is_valid_column(board, AI_move):
+                AI_move = random.randrange(1,8)
+            # time.sleep(2)
         place_piece(board, AI, AI_move)
         is_game_won = detect_win(board, AI)
         if is_game_won:
-            draw_game_(board, turn, game_over=True, AI_move=AI_move)
+            draw_game(board, turn, game_over=True, AI_move=AI_move)
             break
         else:
             turn = HUMAN
