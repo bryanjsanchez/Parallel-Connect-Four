@@ -102,7 +102,7 @@ def evaluate_adjacents(adjacent_pieces, player):
         score += 10
     return score
 
-def draw_game(board, turn, game_over=False, AI_move=0):
+def draw_game(board, turn, game_over=False, AI_move=0, running_time=0):
     highlight_index = AI_move - 1
     print( "\033c") # Clear screen
     print("  ____                            _     _____                ")
@@ -141,8 +141,9 @@ def draw_game(board, turn, game_over=False, AI_move=0):
     print("                     ║  1 2 3 4 5 6 7  ║")
     print("                     ╚═════════════════╝\n")
     if not game_over:
-        print("              Type column to play or 'q' to quit\n")
+        print("              Type column to play or 'q' to quit")
         if turn == HUMAN:
+            print("             Minimax running time: %.4f seconds" % running_time)
             print("Your move: ")
         else:
             print("Waiting for computer...")
@@ -154,6 +155,7 @@ turn = HUMAN
 draw_game(board, turn)
 is_game_won = False
 AI_move = -1
+running_time = 0
 while not is_game_won:
     
     if turn == HUMAN:
@@ -170,11 +172,12 @@ while not is_game_won:
             is_game_won = detect_win(board, turn)
             print(detect_win(board, turn))
             if is_game_won:
-                draw_game(board, turn, game_over=True)
+                draw_game(board, turn, game_over=True,
+                        running_time=running_time)
                 break
             else:
                 turn = AI
-                draw_game(board, turn)
+                draw_game(board, turn, running_time=running_time)
                 continue
         # If player chooses to quit game
         elif pressed_key == "q":
@@ -185,10 +188,11 @@ while not is_game_won:
         else:
            print("\nInvalid input, try again...")
            time.sleep(2)
-           draw_game(board, turn, AI_move = AI_move)
+           draw_game(board, turn, AI_move = AI_move, running_time=running_time)
 
     elif turn == AI:
         # Placeholder AI move. It will change:
+        initial_time = time.time()
         best_move = -1
         best_score = 0
         for col in range(1,8):
@@ -202,15 +206,17 @@ while not is_game_won:
             AI_move = random.randrange(1,8)
             while not is_valid_column(board, AI_move):
                 AI_move = random.randrange(1,8)
-            # time.sleep(2)
         place_piece(board, AI, AI_move)
         is_game_won = detect_win(board, AI)
+        running_time = time.time() - initial_time
         if is_game_won:
-            draw_game(board, turn, game_over=True, AI_move=AI_move)
+            draw_game(board, turn, game_over=True, AI_move=AI_move,
+                    running_time=running_time)
             break
         else:
             turn = HUMAN
-            draw_game(board, turn, AI_move=AI_move)
+            draw_game(board, turn, AI_move=AI_move, running_time=running_time)
             continue
-print("                   Thank you for playing!")
+print("                    Thank you for playing!")
+print("              Minimax running time: %.4f seconds" % running_time)
 exit()
