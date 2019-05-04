@@ -1,6 +1,7 @@
 import os, time
 import numpy as np
 import random
+import math
 
 
 ROWS = 6
@@ -19,12 +20,27 @@ def is_valid_column(board, column):
     return board[0][column - 1] == EMPTY
 
 
+#def next_valid_row(board, column):
+#    for r in range(1,7):
+#        if board[r][column] == EMPTY:
+#            return r
+
+
+def valid_locations(board):
+    valid_locations = []
+    for i in range(1,8):
+       if is_valid_column(board, i):
+           valid_locations.append()
+    return valid_locations
+
+
 def place_piece(board, player, column):
     index = column - 1
     for row in reversed(range(ROWS)):
         if board[row][index] == EMPTY:
             board[row][index] = player
             return
+        
 
 def clone_and_place_piece(board, player, column):
     new_board = board.copy()
@@ -59,6 +75,45 @@ def detect_win(board, player):
                 return True
     return False
     
+
+#returns true if current board is a terminal board which happens when 
+# either player wins or no more spaces on the board are free
+def is_terminal_node(board):
+    return detect_win(board, HUMAN) or detect_win(board, AI) or \
+        len(valid_locations(board)) == 0
+        
+def minimax(board, ply, maxi_player):
+    if ply == 0 or is_terminal_node(board):
+        if is_terminal_node(board):
+            if detect_win(board, HUMAN):
+                return -10000000
+            elif detect_win(board, AI):
+                return 10000000
+            #No more valid moves
+            else:
+                return 0
+        else:
+            return None,score(board, AI)
+        #if max player
+        if maxi_player:
+            value = math.inf
+            for c in valid_locations(board):
+                clone_and_place_piece(board, AI, c)
+                new_score = minimax(board, ply - 1, False)
+                if new_score > value:
+                    value = new_score
+                return c, new_score
+        #if min player
+        else:
+            value = -math.inf
+            for c in valid_locations(board):
+                clone_and_place_piece(board, HUMAN, c)
+                new_score = minimax(board, ply - 1, True)
+                if new_score < value:
+                    value = new_score
+                return c, new_score
+        
+        
 
 def score(board, player):
     score = 0
@@ -189,6 +244,11 @@ while not is_game_won:
 
     elif turn == AI:
         # Placeholder AI move. It will change:
+        
+        """
+        No entiendo muy bien lo que escribiste en esta parte, pero a veces
+        jugando parece que el AI escoge su movida en una columna llena
+        """
         best_move = -1
         best_score = 0
         for col in range(1,8):
