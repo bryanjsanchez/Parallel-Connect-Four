@@ -65,7 +65,8 @@ def score(board, player):
     # Horizontal pieces
     for col in range(COLUMNS - MAX_SPACE_TO_WIN):
         for row in range(ROWS):
-            adjacent_pieces = board[row][col:col+4]
+            adjacent_pieces = [board[row][col], board[row][col+1], 
+                                board[row][col+2], board[row][col+3]] 
             score += evaluate_adjacents(adjacent_pieces, player)
     # Vertical pieces
     for col in range(COLUMNS):
@@ -88,18 +89,28 @@ def score(board, player):
     return score
 
 def evaluate_adjacents(adjacent_pieces, player):
-    score = 0
     opponent = AI
     if player == AI:
         opponent = HUMAN
-    if np.count_nonzero(adjacent_pieces == player) == 4:
+    score = 0
+    player_pieces = 0
+    empty_spaces = 0
+    opponent_pieces = 0
+    for p in adjacent_pieces:
+        if p == player:
+            player_pieces += 1
+        elif p == EMPTY:
+            empty_spaces += 1
+        elif p == opponent:
+            opponent_pieces += 1
+    if player_pieces == 4:
         score += 999
-    if np.count_nonzero(adjacent_pieces == player) == 3 and \
-        np.count_nonzero(adjacent_pieces == EMPTY) == 1:
+    if player_pieces == 3 and empty_spaces == 1:
         score += 50  
-    if np.count_nonzero(adjacent_pieces == player) == 2 and \
-        np.count_nonzero(adjacent_pieces == EMPTY) == 2:
+    if player_pieces == 2 and empty_spaces == 2:
         score += 10
+    if player_pieces == 1 and opponent_pieces == 3:
+        score += 500
     return score
 
 def draw_game(board, turn, game_over=False, AI_move=0, running_time=0):
@@ -157,7 +168,6 @@ is_game_won = False
 AI_move = -1
 running_time = 0
 while not is_game_won:
-    
     if turn == HUMAN:
         # Take user input
         pressed_key = input()
@@ -170,7 +180,6 @@ while not is_game_won:
         if pressed_key in range(1,8) and is_valid_column(board, pressed_key):
             place_piece(board, HUMAN, pressed_key)
             is_game_won = detect_win(board, turn)
-            print(detect_win(board, turn))
             if is_game_won:
                 draw_game(board, turn, game_over=True,
                         running_time=running_time)
@@ -187,7 +196,6 @@ while not is_game_won:
         # Invalid input
         else:
            print("\nInvalid input, try again...")
-           time.sleep(2)
            draw_game(board, turn, AI_move = AI_move, running_time=running_time)
 
     elif turn == AI:
