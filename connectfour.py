@@ -117,6 +117,14 @@ def minimax(board, ply, maxi_player):
 
 def score(board, player):
     score = 0
+    # Give more weight to center columns
+    for col in range(2, 5):
+        for row in range(ROWS):
+            if board[row][col] == player:
+                if col == 3:
+                    score += 6
+                else:
+                    score+=5
     # Horizontal pieces
     for col in range(COLUMNS - MAX_SPACE_TO_WIN):
         for row in range(ROWS):
