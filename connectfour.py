@@ -82,45 +82,6 @@ def detect_win(board, player):
 def is_terminal_board(board):
     return detect_win(board, HUMAN) or detect_win(board, AI) or \
         len(valid_locations(board)) == 0
-      
-#manages ai behavior
-def minimax(board, ply, maxi_player):
-    valid_cols = valid_locations(board)
-    is_terminal = is_terminal_board(board)
-    if ply == 0 or is_terminal:
-        if is_terminal:
-            if detect_win(board, HUMAN):
-                return (None,-10000000)
-            if detect_win(board, AI):
-                return (None,10000000)
-            #No more valid moves
-            if ply == 0:
-                return (None,0)
-        else:
-            return (None,score(board, AI))
-    #if max player
-    if maxi_player:
-        value = -math.inf
-        col = random.choice(valid_cols)
-        for c in valid_cols:
-            next_board = clone_and_place_piece(board, AI, c)
-            new_score = minimax(next_board, ply - 1, False)[1]
-            if new_score > value:
-                value = new_score
-                col = c
-        return col, value
-        #if min player
-    else:
-        value = math.inf
-        col = random.choice(valid_cols)
-        for c in valid_cols:
-            next_board = clone_and_place_piece(board, HUMAN, c)
-            new_score = minimax(next_board, ply - 1, True)[1]
-            if new_score < value:
-                value = new_score
-                col = c
-        return col, value
-        
         
 
 def score(board, player):
@@ -159,6 +120,7 @@ def score(board, player):
             score += evaluate_adjacents(adjacent_pieces, player)
     return score
 
+
 def evaluate_adjacents(adjacent_pieces, player):
     opponent = AI
     if player == AI:
@@ -174,15 +136,62 @@ def evaluate_adjacents(adjacent_pieces, player):
             empty_spaces += 1
         elif p == opponent:
             opponent_pieces += 1
+
     if player_pieces == 4:
         score += 999
-    if player_pieces == 3 and empty_spaces == 1:
-        score += 50  
-    if player_pieces == 2 and empty_spaces == 2:
-        score += 10
-    if player_pieces == 1 and opponent_pieces == 3:
-        score += 500
+    elif player_pieces == 3 and empty_spaces == 1:
+        score += 200 
+    elif player_pieces == 2 and empty_spaces == 2:
+        score += 20
+#    if player_pieces == 1 and empty_spaces == 3:
+#        score += 5
+#    if player_pieces == 2 and empty_spaces == 1:
+#        score += 3
+#    elif opponent_pieces == 3 and empty_spaces == 1:
+#        score += 8
+    elif player_pieces == 1 and opponent_pieces == 3:
+        score += 100
     return score
+
+
+#manages ai behavior
+def minimax(board, ply, maxi_player):
+    valid_cols = valid_locations(board)
+    is_terminal = is_terminal_board(board)
+    if ply == 0 or is_terminal:
+        if is_terminal:
+            if detect_win(board, HUMAN):
+                return (None,-1000000000)
+            if detect_win(board, AI):
+                return (None,1000000000)
+            #No more valid moves
+            if ply == 0:
+                return (None,0)
+        else:
+            return (None,score(board, AI))
+    #if max player
+    if maxi_player:
+        value = -math.inf
+        col = random.choice(valid_cols)
+        for c in valid_cols:
+            next_board = clone_and_place_piece(board, AI, c)
+            new_score = minimax(next_board, ply - 1, False)[1]
+            if new_score > value:
+                value = new_score
+                col = c
+        return col, value
+        #if min player
+    else:
+        value = math.inf
+        col = random.choice(valid_cols)
+        for c in valid_cols:
+            next_board = clone_and_place_piece(board, HUMAN, c)
+            new_score = minimax(next_board, ply - 1, True)[1]
+            if new_score < value:
+                value = new_score
+                col = c
+        return col, value
+        
 
 def draw_game(board, turn, game_over=False, AI_move=0, running_time=0):
     highlight_index = AI_move - 1
@@ -263,7 +272,8 @@ while not is_game_won:
         elif pressed_key == "q":
             print( "\033c") # Clear screen
             print("\nThank you for playing!")
-            exit()
+            break
+            #exit()
         # Invalid input
         else:
            print("\nInvalid input, try again...")
@@ -272,8 +282,8 @@ while not is_game_won:
     elif turn == AI:
         # Placeholder AI move. It will change:
         initial_time = time.time()
-        best_move = -1
-        best_score = 0
+#        best_move = -1
+#        best_score = 0
         col, x = minimax(board, 4, True)
         AI_move = col
 #        for col in range(1,8):
@@ -300,4 +310,4 @@ while not is_game_won:
             continue
 print("                    Thank you for playing!")
 print("              Minimax running time: %.4f seconds" % running_time)
-exit()
+#exit()
