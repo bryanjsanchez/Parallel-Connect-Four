@@ -15,7 +15,7 @@ MAX_SPACE_TO_WIN = 3 # Farthest space where a winning connection may start
 def create_board():
     return np.zeros((ROWS, COLUMNS), np.int8)
 
-
+#checks if column is full or not
 def is_valid_column(board, column):
     return board[0][column - 1] == EMPTY
 
@@ -26,11 +26,12 @@ def is_valid_column(board, column):
 #            return r
 
 
+#returns list of columns that are still valid to play
 def valid_locations(board):
     valid_locations = []
     for i in range(1,8):
        if is_valid_column(board, i):
-           valid_locations.append()
+           valid_locations.append(i)
     return valid_locations
 
 
@@ -41,13 +42,13 @@ def place_piece(board, player, column):
             board[row][index] = player
             return
         
-
+#returns a successor board
 def clone_and_place_piece(board, player, column):
     new_board = board.copy()
     place_piece(new_board, player, column)
     return new_board
 
-
+#checks if the move made was a winning move
 def detect_win(board, player):
     # Horizontal win
     for col in range(COLUMNS - MAX_SPACE_TO_WIN):
@@ -78,40 +79,47 @@ def detect_win(board, player):
 
 #returns true if current board is a terminal board which happens when 
 # either player wins or no more spaces on the board are free
-def is_terminal_node(board):
+def is_terminal_board(board):
     return detect_win(board, HUMAN) or detect_win(board, AI) or \
         len(valid_locations(board)) == 0
-        
+      
+#manages ai behavior
 def minimax(board, ply, maxi_player):
-    if ply == 0 or is_terminal_node(board):
-        if is_terminal_node(board):
+    valid_cols = valid_locations(board)
+    is_terminal = is_terminal_board(board)
+    if ply == 0 or is_terminal:
+        if is_terminal:
             if detect_win(board, HUMAN):
-                return -10000000
-            elif detect_win(board, AI):
-                return 10000000
+                return (None,-10000000)
+            if detect_win(board, AI):
+                return (None,10000000)
             #No more valid moves
-            else:
-                return 0
+            if ply == 0:
+                return (None,0)
         else:
-            return None,score(board, AI)
-        #if max player
-        if maxi_player:
-            value = math.inf
-            for c in valid_locations(board):
-                clone_and_place_piece(board, AI, c)
-                new_score = minimax(board, ply - 1, False)
-                if new_score > value:
-                    value = new_score
-                return c, new_score
+            return (None,score(board, AI))
+    #if max player
+    if maxi_player:
+        value = -math.inf
+        col = random.choice(valid_cols)
+        for c in valid_cols:
+            next_board = clone_and_place_piece(board, AI, c)
+            new_score = minimax(next_board, ply - 1, False)[1]
+            if new_score > value:
+                value = new_score
+                col = c
+        return col, value
         #if min player
-        else:
-            value = -math.inf
-            for c in valid_locations(board):
-                clone_and_place_piece(board, HUMAN, c)
-                new_score = minimax(board, ply - 1, True)
-                if new_score < value:
-                    value = new_score
-                return c, new_score
+    else:
+        value = math.inf
+        col = random.choice(valid_cols)
+        for c in valid_cols:
+            next_board = clone_and_place_piece(board, HUMAN, c)
+            new_score = minimax(next_board, ply - 1, True)[1]
+            if new_score < value:
+                value = new_score
+                col = c
+        return col, value
         
         
 
@@ -266,17 +274,19 @@ while not is_game_won:
         initial_time = time.time()
         best_move = -1
         best_score = 0
-        for col in range(1,8):
-            current_score = score(clone_and_place_piece(board, AI, col), AI)
-            if current_score > best_score:
-                best_move = col
-                best_score = current_score
-        if best_move in range(1,8):
-            AI_move = best_move
-        else:
-            AI_move = random.randrange(1,8)
-            while not is_valid_column(board, AI_move):
-                AI_move = random.randrange(1,8)
+        col, x = minimax(board, 4, True)
+        AI_move = col
+#        for col in range(1,8):
+#            current_score = score(clone_and_place_piece(board, AI, col), AI)
+#            if current_score > best_score:
+#                best_move = col
+#                best_score = current_score
+#        if best_move in range(1,8):
+#            AI_move = best_move
+#        else:
+#            AI_move = random.randrange(1,8)
+#            while not is_valid_column(board, AI_move):
+#                AI_move = random.randrange(1,8)
         place_piece(board, AI, AI_move)
         is_game_won = detect_win(board, AI)
         running_time = time.time() - initial_time
