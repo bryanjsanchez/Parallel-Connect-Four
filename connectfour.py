@@ -9,6 +9,7 @@ EMPTY = 0
 HUMAN = 1
 AI = 2
 
+MAX_SPACE_TO_WIN = 3 # Farthest space where a winning connection may start
 
 def create_board():
     return np.zeros((ROWS, COLUMNS), np.int8)
@@ -32,7 +33,6 @@ def clone_and_place_piece(board, player, column):
 
 
 def detect_win(board, player):
-    MAX_SPACE_TO_WIN = 3 # Farthest space where a winning connection may start
     # Horizontal win
     for col in range(COLUMNS - MAX_SPACE_TO_WIN):
         for row in range(ROWS):
@@ -62,14 +62,49 @@ def detect_win(board, player):
 
 def score(board, player):
     score = 0
-    if detect_win(board, player):
-        score += 9999
+    # Horizontal pieces
+    for col in range(COLUMNS - MAX_SPACE_TO_WIN):
+        for row in range(ROWS):
+            adjacent_pieces = board[row][col:col+4]
+            score += evaluate_adjacents(adjacent_pieces, player)
+    # Vertical pieces
+    for col in range(COLUMNS):
+        for row in range(ROWS - MAX_SPACE_TO_WIN):
+            adjacent_pieces = [board[row][col], board[row+1][col], 
+                                board[row+2][col], board[row+3][col]] 
+            score += evaluate_adjacents(adjacent_pieces, player)
+    # Diagonal upwards pieces
+    for col in range(COLUMNS - MAX_SPACE_TO_WIN):
+        for row in range(ROWS - MAX_SPACE_TO_WIN):
+            adjacent_pieces = [board[row][col], board[row+1][col+1], 
+                                board[row+2][col+2], board[row+3][col+3]] 
+            score += evaluate_adjacents(adjacent_pieces, player)
+    # Diagonal downwards pieces
+    for col in range(COLUMNS - MAX_SPACE_TO_WIN):
+        for row in range(MAX_SPACE_TO_WIN, ROWS):
+            adjacent_pieces = [board[row][col], board[row-1][col+1], 
+                    board[row-2][col+2], board[row-3][col+3]]
+            score += evaluate_adjacents(adjacent_pieces, player)
     return score
 
+def evaluate_adjacents(adjacent_pieces, player):
+    score = 0
+    opponent = AI
+    if player == AI:
+        opponent = HUMAN
+    if np.count_nonzero(adjacent_pieces == player) == 4:
+        score += 999
+    if np.count_nonzero(adjacent_pieces == player) == 3 and \
+        np.count_nonzero(adjacent_pieces == EMPTY) == 1:
+        score += 50  
+    if np.count_nonzero(adjacent_pieces == player) == 2 and \
+        np.count_nonzero(adjacent_pieces == EMPTY) == 2:
+        score += 10
+    return score
 
 def draw_game(board, turn, game_over=False, AI_move=0):
     highlight_index = AI_move - 1
-    os.system('clear')
+    print( "\033c") # Clear screen
     print("  ____                            _     _____                ")
     print(" / ___|___  _ __  _ __   ___  ___| |_  |  ___|__  _   _ _ __ ")
     print("| |   / _ \| '_ \| '_ \ / _ \/ __| __| | |_ / _ \| | | | '__|")
@@ -143,7 +178,7 @@ while not is_game_won:
                 continue
         # If player chooses to quit game
         elif pressed_key == "q":
-            os.system("clear")
+            print( "\033c") # Clear screen
             print("\nThank you for playing!")
             exit()
         # Invalid input
