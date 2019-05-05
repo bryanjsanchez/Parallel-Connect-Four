@@ -140,22 +140,55 @@ def evaluate_adjacents(adjacent_pieces, player):
     if player_pieces == 4:
         score += 999
     elif player_pieces == 3 and empty_spaces == 1:
-        score += 200 
+        score += 10 
     elif player_pieces == 2 and empty_spaces == 2:
-        score += 20
-#    if player_pieces == 1 and empty_spaces == 3:
-#        score += 5
-#    if player_pieces == 2 and empty_spaces == 1:
-#        score += 3
-#    elif opponent_pieces == 3 and empty_spaces == 1:
-#        score += 8
-    elif player_pieces == 1 and opponent_pieces == 3:
-        score += 100
+        score += 4
+    elif opponent_pieces == 3 and empty_spaces == 1:
+        score -= 8
+#    elif player_pieces == 1 and opponent_pieces == 3:
+#        score += 100
     return score
 
 
 #manages ai behavior
-def minimax(board, ply, maxi_player):
+#def minimax(board, ply, maxi_player):
+#    valid_cols = valid_locations(board)
+#    is_terminal = is_terminal_board(board)
+#    if ply == 0 or is_terminal:
+#        if is_terminal:
+#            if detect_win(board, HUMAN):
+#                return (None,-1000000000)
+#            if detect_win(board, AI):
+#                return (None,1000000000)
+#            #No more valid moves
+#            if ply == 0:
+#                return (None,0)
+#        else:
+#            return (None,score(board, AI))
+#    #if max player
+#    if maxi_player:
+#        value = -math.inf
+#        col = random.choice(valid_cols)
+#        for c in valid_cols:
+#            next_board = clone_and_place_piece(board, AI, c)
+#            new_score = minimax(next_board, ply - 1, False)[1]
+#            if new_score > value:
+#                value = new_score
+#                col = c
+#        return col, value
+#        #if min player
+#    else:
+#        value = math.inf
+#        col = random.choice(valid_cols)
+#        for c in valid_cols:
+#            next_board = clone_and_place_piece(board, HUMAN, c)
+#            new_score = minimax(next_board, ply - 1, True)[1]
+#            if new_score < value:
+#                value = new_score
+#                col = c
+#        return col, value
+    
+def minimax(board, ply, alpha, beta, maxi_player):
     valid_cols = valid_locations(board)
     is_terminal = is_terminal_board(board)
     if ply == 0 or is_terminal:
@@ -175,21 +208,32 @@ def minimax(board, ply, maxi_player):
         col = random.choice(valid_cols)
         for c in valid_cols:
             next_board = clone_and_place_piece(board, AI, c)
-            new_score = minimax(next_board, ply - 1, False)[1]
+            new_score = minimax(next_board, ply - 1, alpha, beta, False)[1]
             if new_score > value:
                 value = new_score
                 col = c
+            #alpha pruning
+            if value > alpha:
+                alpha = new_score
+            #if beta is less than or equal to alpha, there will be no need to
+            # check other branches because there will not be a better move
+            if beta <= alpha:
+                break
         return col, value
-        #if min player
+    #if min player
     else:
         value = math.inf
         col = random.choice(valid_cols)
         for c in valid_cols:
             next_board = clone_and_place_piece(board, HUMAN, c)
-            new_score = minimax(next_board, ply - 1, True)[1]
+            new_score = minimax(next_board, ply - 1, alpha, beta, True)[1]
             if new_score < value:
                 value = new_score
                 col = c
+            if value < beta:
+                beta  = value
+            if beta <= alpha:
+                break
         return col, value
         
 
@@ -284,7 +328,9 @@ while not is_game_won:
         initial_time = time.time()
 #        best_move = -1
 #        best_score = 0
-        col, x = minimax(board, 4, True)
+        #for alpha-beta pruning we initialize minimax with worse value for
+        #alpha, -inf, and worse value for beta, inf.
+        col, minimax_value = minimax(board, 4, -math.inf, math.inf, True)
         AI_move = col
 #        for col in range(1,8):
 #            current_score = score(clone_and_place_piece(board, AI, col), AI)
