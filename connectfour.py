@@ -234,7 +234,10 @@ is_game_won = False
 AI_move = -1
 running_time = 0
 draw_game(board, turn)
+total_moves = 0
+minimax_times = []
 while not is_game_won:
+    total_moves += 1
     if turn == HUMAN:
         # Take user input
         pressed_key = input()
@@ -273,6 +276,7 @@ while not is_game_won:
         place_piece(board, AI, AI_move)
         is_game_won = detect_win(board, AI)
         running_time = time.time() - initial_time
+        minimax_times.append(running_time)
         if is_game_won:
             draw_game(board, turn, game_over=True, AI_move=AI_move,
                     running_time=running_time)
@@ -282,5 +286,7 @@ while not is_game_won:
             draw_game(board, turn, AI_move=AI_move, running_time=running_time)
             continue
 if is_game_won:
+    running_time = sum(minimax_times) / len(minimax_times)
     print("                    Thank you for playing!")
-    print("              Minimax running time: %.4f seconds" % running_time)
+    print("          Average minimax running time: %.4f seconds" % running_time)
+    print("                   Total number of moves: %s" % total_moves)
