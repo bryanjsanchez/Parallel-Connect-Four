@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os, time
 import numpy as np
 import random
