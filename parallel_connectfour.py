@@ -3,6 +3,10 @@ import os, time
 import numpy as np
 import random
 import math
+import numba
+from numba import njit, prange
+
+DEPTH = 4
 
 ROWS = 6
 COLUMNS = 7
@@ -22,14 +26,14 @@ def is_valid_column(board, column):
 # Returns list of columns that are still not full
 def valid_locations(board):
     valid_locations = []
-    for i in range(1,8):
+    for i in prange(1,8):
        if is_valid_column(board, i):
            valid_locations.append(i)
     return valid_locations
 
 def place_piece(board, player, column):
     index = column - 1
-    for row in reversed(range(ROWS)):
+    for row in reversed(prange(ROWS)):
         if board[row][index] == EMPTY:
             board[row][index] = player
             return
@@ -43,69 +47,73 @@ def clone_and_place_piece(board, player, column):
 # Checks if the player won the given board
 def detect_win(board, player):
     # Horizontal win
-    for col in range(COLUMNS - MAX_SPACE_TO_WIN):
-        for row in range(ROWS):
+
+    for col in prange(COLUMNS - MAX_SPACE_TO_WIN):
+        for row in prange(ROWS):
             if board[row][col] == player and board[row][col+1] == player and \
                     board[row][col+2] == player and board[row][col+3] == player:
                 return True
     # Vertical win
-    for col in range(COLUMNS):
-        for row in range(ROWS - MAX_SPACE_TO_WIN):
+
+    for col in prange(COLUMNS):
+        for row in prange(ROWS - MAX_SPACE_TO_WIN):
             if board[row][col] == player and board[row+1][col] == player and \
                     board[row+2][col] == player and board[row+3][col] == player:
                 return True
     # Diagonal upwards win
-    for col in range(COLUMNS - MAX_SPACE_TO_WIN):
-        for row in range(ROWS - MAX_SPACE_TO_WIN):
+
+    for col in prange(COLUMNS - MAX_SPACE_TO_WIN):
+        for row in prange(ROWS - MAX_SPACE_TO_WIN):
             if board[row][col] == player and board[row+1][col+1] == player and \
                     board[row+2][col+2] == player and board[row+3][col+3] == player:
                 return True
-    # Diagonal downwards win
-    for col in range(COLUMNS - MAX_SPACE_TO_WIN):
-        for row in range(MAX_SPACE_TO_WIN, ROWS):
+
+
+    for col in prange(COLUMNS - MAX_SPACE_TO_WIN):
+        for row in prange(MAX_SPACE_TO_WIN, ROWS):
             if board[row][col] == player and board[row-1][col+1] == player and \
                     board[row-2][col+2] == player and board[row-3][col+3] == player:
                 return True
     return False
-    
-# Returns true if current board is a terminal board which happens when 
+
+# Returns true if current board is a terminal board which happens when
 # either player wins or no more spaces on the board are free
 def is_terminal_board(board):
     return detect_win(board, HUMAN) or detect_win(board, AI) or \
         len(valid_locations(board)) == 0
-        
+
 def score(board, player):
     score = 0
     # Give more weight to center columns
-    for col in range(2, 5):
-        for row in range(ROWS):
+    for col in prange(2, 5):
+        for row in prange(ROWS):
             if board[row][col] == player:
                 if col == 3:
                     score += 3
                 else:
                     score+= 2
     # Horizontal pieces
-    for col in range(COLUMNS - MAX_SPACE_TO_WIN):
-        for row in range(ROWS):
-            adjacent_pieces = [board[row][col], board[row][col+1], 
-                                board[row][col+2], board[row][col+3]] 
+    for col in prange(COLUMNS - MAX_SPACE_TO_WIN):
+        for row in prange(ROWS):
+            adjacent_pieces = [board[row][col], board[row][col+1],
+                                board[row][col+2], board[row][col+3]]
             score += evaluate_adjacents(adjacent_pieces, player)
     # Vertical pieces
-    for col in range(COLUMNS):
-        for row in range(ROWS - MAX_SPACE_TO_WIN):
-            adjacent_pieces = [board[row][col], board[row+1][col], 
-                                board[row+2][col], board[row+3][col]] 
+    for col in prange(COLUMNS):
+        for row in prange(ROWS - MAX_SPACE_TO_WIN):
+            adjacent_pieces = [board[row][col], board[row+1][col],
+                                board[row+2][col], board[row+3][col]]
             score += evaluate_adjacents(adjacent_pieces, player)
     # Diagonal upwards pieces
-    for col in range(COLUMNS - MAX_SPACE_TO_WIN):
-        for row in range(ROWS - MAX_SPACE_TO_WIN):
-            adjacent_pieces = [board[row][col], board[row+1][col+1], 
-                                board[row+2][col+2], board[row+3][col+3]] 
+    for col in prange(COLUMNS - MAX_SPACE_TO_WIN):
+        for row in prange(ROWS - MAX_SPACE_TO_WIN):
+            adjacent_pieces = [board[row][col], board[row+1][col+1],
+                                board[row+2][col+2], board[row+3][col+3]]
             score += evaluate_adjacents(adjacent_pieces, player)
     # Diagonal downwards pieces
-    for col in range(COLUMNS - MAX_SPACE_TO_WIN):
-        for row in range(MAX_SPACE_TO_WIN, ROWS):
-            adjacent_pieces = [board[row][col], board[row-1][col+1], 
+    for col in prange(COLUMNS - MAX_SPACE_TO_WIN):
+        for row in prange(MAX_SPACE_TO_WIN, ROWS):
+            adjacent_pieces = [board[row][col], board[row-1][col+1],
                     board[row-2][col+2], board[row-3][col+3]]
             score += evaluate_adjacents(adjacent_pieces, player)
     return score
@@ -133,7 +141,7 @@ def evaluate_adjacents(adjacent_pieces, player):
         score += 10
     return score
 
-def minimax(board, ply, alpha, beta, maxi_player):
+def minimax(board, ply, maxi_player):
     valid_cols = valid_locations(board)
     is_terminal = is_terminal_board(board)
     if ply == 0 or is_terminal:
@@ -152,34 +160,23 @@ def minimax(board, ply, alpha, beta, maxi_player):
         # If every choice has an equal score, choose randomly
         col = random.choice(valid_cols)
         # Expand current node/board
-        for c in valid_cols:
+        for c in prange(len(valid_cols) -1):
             next_board = clone_and_place_piece(board, AI, c)
-            new_score = minimax(next_board, ply - 1, alpha, beta, False)[1]
+            new_score = minimax(next_board, ply - 1, False)[1]
             if new_score > value:
                 value = new_score
                 col = c
-            # Alpha pruning
-            if value > alpha:
-                alpha = new_score
-            # If beta is less than or equal to alpha, there will be no need to
-            # check other branches because there will not be a better move
-            if beta <= alpha:
-                break
         return col, value
     #if min player
     else:
         value = math.inf
         col = random.choice(valid_cols)
-        for c in valid_cols:
+        for c in prange(len(valid_cols)-1):
             next_board = clone_and_place_piece(board, HUMAN, c)
-            new_score = minimax(next_board, ply - 1, alpha, beta, True)[1]
+            new_score = minimax(next_board, ply - 1, True)[1]
             if new_score < value:
                 value = new_score
                 col = c
-            if value < beta:
-                beta  = value
-            if beta <= alpha:
-                break
         return col, value
 
 def draw_game(board, turn, game_over=False, AI_move=0, running_time=0):
@@ -245,9 +242,9 @@ while not is_game_won:
         try:
             pressed_key = int(pressed_key)
         except ValueError:
-            pass      
+            pass
         # If typed 1 to 7
-        if pressed_key in range(1,8) and is_valid_column(board, pressed_key):
+        if pressed_key in prange(1,8) and is_valid_column(board, pressed_key):
             place_piece(board, HUMAN, pressed_key)
             is_game_won = detect_win(board, turn)
             if is_game_won:
@@ -271,9 +268,8 @@ while not is_game_won:
 
     elif turn == AI:
         initial_time = time.time()
-        # For alpha-beta pruning we initialize minimax with worse value for
-        # alpha, -inf, and worse value for beta, inf.
-        AI_move, minimax_value = minimax(board, 5, -math.inf, math.inf, True)
+
+        AI_move, minimax_value = minimax(board, DEPTH, True)
         place_piece(board, AI, AI_move)
         is_game_won = detect_win(board, AI)
         running_time = time.time() - initial_time
